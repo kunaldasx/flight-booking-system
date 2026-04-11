@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Flight, SearchParams } from "@/types";
+import { SearchParams, TravellerData } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -30,13 +30,18 @@ export const flightService = {
     return response.data;
   },
 
-  async createBooking(searchId: string, traveller: any) {
+  async createBooking(searchId: string, traveller: TravellerData) {
     const response = await api.post("/api/booking", { searchId, traveller });
     return response.data;
   },
 
   async getAllBookings(page = 1, limit = 20) {
     const response = await api.get("/api/booking", { params: { page, limit } });
+    return response.data;
+  },
+
+  async getAirports() {
+    const response = await api.get("/api/search/airports");
     return response.data;
   },
 };

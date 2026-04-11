@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { Flight, FareTier } from "@/types";
 
@@ -7,8 +8,6 @@ interface FlightCardProps {
 }
 
 export default function FlightCard({ flight, onSelect }: FlightCardProps) {
-  // Guard: fares may be undefined when stale localStorage data is rendered
-  // before a fresh search is done with the updated backend.
   const fares: FareTier[] = flight.fares ?? [];
   const defaultIdx =
     fares.length > 0
@@ -19,15 +18,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
       : 0;
   const [selectedFareIdx, setSelectedFareIdx] = useState(defaultIdx);
   const selectedFare: FareTier | undefined = fares[selectedFareIdx];
-
-  // If fares are missing entirely (stale cache), show a minimal skeleton
-  if (!selectedFare) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-3 text-center text-sm text-gray-400">
-        Flight data outdated — please run a new search to refresh.
-      </div>
-    );
-  }
 
   const formatTime = (iso: string) => {
     if (!iso) return "—";
@@ -60,9 +50,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
   const journeyLabel = (flight as any).journeyLabel as string | undefined;
 
   const handleSelect = () => {
-    // Pass the flight with the chosen fareId AND its actual price so the
-    // traveller page and booking flow always see the price the user selected,
-    // not the cheapest fare's price that was used as the card headline.
     onSelect({
       ...flight,
       fareId: selectedFare.fareId,
@@ -70,7 +57,7 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
     });
   };
 
-  // ── Baggage label helper ──────────────────────────────────────────────────
+  //  Baggage label
   const baggageLabel = (b: FareTier["cabinBaggage"]) => {
     if (!b) return "—";
     if (b.quantity === 0) return "Not included";
@@ -86,7 +73,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 mb-3">
-      {/* ── Top row: airline + badges ─────────────────────────────────────── */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
@@ -123,7 +109,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
         </div>
       </div>
 
-      {/* ── Times / duration / stops ──────────────────────────────────────── */}
       <div className="flex items-center gap-4 mb-4">
         <div className="text-center">
           <div className="text-lg font-bold text-gray-900">
@@ -168,10 +153,8 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
         </div>
       </div>
 
-      {/* ── Fare tier tabs ────────────────────────────────────────────────── */}
       {fares.length > 1 && (
         <div className="border border-gray-200 rounded-lg overflow-hidden mb-3">
-          {/* Tab headers */}
           <div className="flex border-b border-gray-200 bg-gray-50">
             {fares.map((fare, idx) => (
               <button
@@ -195,10 +178,8 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
             ))}
           </div>
 
-          {/* Selected fare details */}
           <div className="p-3 bg-white">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              {/* Cabin baggage */}
               <div className="flex flex-col gap-1">
                 <span className="text-gray-500 flex items-center gap-1">
                   🎒 Cabin bag
@@ -208,7 +189,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
                 </span>
               </div>
 
-              {/* Check-in baggage */}
               <div className="flex flex-col gap-1">
                 <span className="text-gray-500 flex items-center gap-1">
                   🧳 Check-in
@@ -220,7 +200,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
                 </span>
               </div>
 
-              {/* Seat & Meal benefits */}
               {selectedFare.benefits.map((benefit) => (
                 <div key={benefit.benefitType} className="flex flex-col gap-1">
                   <span className="text-gray-500">
@@ -230,7 +209,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
                 </div>
               ))}
 
-              {/* Refundable */}
               <div className="flex flex-col gap-1">
                 <span className="text-gray-500">↩ Refund</span>
                 <span>
@@ -250,7 +228,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
         </div>
       )}
 
-      {/* Single-fare fallback badges (when only 1 fare) */}
       {fares.length === 1 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {selectedFare.refundable && (
@@ -264,7 +241,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
         </div>
       )}
 
-      {/* ── Bottom: price + select ────────────────────────────────────────── */}
       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
         <div>
           <div className="text-2xl font-bold text-green-600">

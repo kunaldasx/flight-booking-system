@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -19,9 +20,6 @@ export default function FlightsPage() {
   const [searchId, setSearchId] = useState<string>("");
   const [airports, setAirports] = useState<{ [key: string]: Airport }>({});
 
-  // ── Default to the dataset's actual cities (DEL → SHJ) ──────────────────
-  // The JSON is a fixed DEL ↔ SHJ dataset.  Pre-filling these values avoids
-  // the "search DEL→BOM, get Sharjah flights" confusion.
   const [searchParams, setSearchParams] = useState<SearchParams>({
     sourceCity: "DEL",
     destinationCity: "SHJ",
@@ -42,25 +40,37 @@ export default function FlightsPage() {
     if (savedFlights) {
       try {
         const parsed: Flight[] = JSON.parse(savedFlights);
-        // Invalidate cache if flights are missing the `fares` field (old format)
-        const isStale = parsed.length > 0 && !Array.isArray(parsed[0]?.fares);
-        if (isStale) {
-          localStorage.removeItem("searchResults");
-          localStorage.removeItem("currentSearchId");
-          localStorage.removeItem("airports");
-        } else {
-          setFlights(parsed);
-          setSearchDone(true);
-          if (savedSearchId) setSearchId(savedSearchId);
-        }
+
+        setFlights(parsed);
+        setSearchDone(true);
+        if (savedSearchId) setSearchId(savedSearchId);
       } catch {
         localStorage.removeItem("searchResults");
       }
     }
+
+    const fetchAirports = () => {
+      flightService
+        .getAirports()
+        .then((data) => {
+          if (data.airports) {
+            setAirports(data.airports);
+            localStorage.setItem("airports", JSON.stringify(data.airports));
+          }
+        })
+        .catch(console.error);
+    };
+
     if (savedAirports) {
       try {
         setAirports(JSON.parse(savedAirports));
-      } catch {}
+      } catch {
+        localStorage.removeItem("airports");
+
+        fetchAirports();
+      }
+    } else {
+      fetchAirports();
     }
   }, []);
 
@@ -77,7 +87,7 @@ export default function FlightsPage() {
       setFlights(result.flights || []);
       setSearchDone(true);
       setAirports(result.metadata?.airports || {});
-      // Reset filters to defaults on every new search
+
       setFilters({ ...searchParams, priceRange: DEFAULT_PRICE_RANGE });
 
       localStorage.setItem("searchResults", JSON.stringify(result.flights));
@@ -94,8 +104,14 @@ export default function FlightsPage() {
     }
   };
 
-  const handleFlightSelect = (flight: Flight) => {
+  const handleFlightSelect = async (flight: Flight) => {
     try {
+      await flightService.selectFlight(
+        searchId,
+        flight.flightKey,
+        flight.fareId,
+      );
+
       localStorage.setItem("selectedFlight", JSON.stringify(flight));
       localStorage.setItem("searchId", searchId);
       router.push("/traveller");
@@ -131,167 +147,161 @@ export default function FlightsPage() {
   const isRoundTrip = returnFlights.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-blue-600 text-white py-6">
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">✈️ Flight Booking System</h1>
-          <nav className="flex items-center gap-2">
-            <a
-              href="/selected-flights"
-              className="text-sm font-medium px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-400 transition-colors"
-            >
-              Selected Flights
-            </a>
-
-            <a
-              href="/bookings"
-              className="text-sm font-medium px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-400 transition-colors"
-            >
-              All Bookings
-            </a>
-          </nav>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* ── Dataset notice ─────────────────────────────────────────────── */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-6 text-sm text-blue-800">
-          <strong>Demo dataset:</strong> This system uses a fixed DEL ↔ SHJ
-          flight dataset (Mar 2–5 2026). Searching other cities will still show
-          all available flights from this dataset.
-        </div>
-
-        {/* Search Form */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-            Search Flights
-          </h2>
-          <form
-            onSubmit={handleSearch}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          >
-            <CitySearch
-              airports={airports}
-              value={searchParams.sourceCity}
-              onChange={(city) =>
-                setSearchParams({ ...searchParams, sourceCity: city })
+    <main className="max-w-7xl mx-auto px-4 py-8">
+      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          Search Flights
+        </h2>
+        <form
+          onSubmit={handleSearch}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        >
+          <CitySearch
+            airports={airports}
+            value={searchParams.sourceCity}
+            onChange={(city) =>
+              setSearchParams({ ...searchParams, sourceCity: city })
+            }
+            label="From (Origin)"
+            placeholder="Search city (e.g., New Delhi)"
+          />
+          <CitySearch
+            airports={airports}
+            value={searchParams.destinationCity}
+            onChange={(city) =>
+              setSearchParams({ ...searchParams, destinationCity: city })
+            }
+            label="To (Destination)"
+            placeholder="Search city (e.g., Sharjah)"
+          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Trip Type
+            </label>
+            <select
+              value={searchParams.tripType}
+              onChange={(e) =>
+                setSearchParams({
+                  ...searchParams,
+                  tripType: e.target.value as "oneway" | "roundtrip",
+                })
               }
-              label="From (Origin)"
-              placeholder="Search city (e.g., New Delhi)"
-            />
-            <CitySearch
-              airports={airports}
-              value={searchParams.destinationCity}
-              onChange={(city) =>
-                setSearchParams({ ...searchParams, destinationCity: city })
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="oneway">One-way</option>
+              <option value="roundtrip">Round-trip</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Departure Date
+            </label>
+            <input
+              type="date"
+              value={searchParams.departureDate}
+              onChange={(e) =>
+                setSearchParams({
+                  ...searchParams,
+                  departureDate: e.target.value,
+                })
               }
-              label="To (Destination)"
-              placeholder="Search city (e.g., Sharjah)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+          {searchParams.tripType === "roundtrip" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Trip Type
-              </label>
-              <select
-                value={searchParams.tripType}
-                onChange={(e) =>
-                  setSearchParams({
-                    ...searchParams,
-                    tripType: e.target.value as "oneway" | "roundtrip",
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="oneway">One-way</option>
-                <option value="roundtrip">Round-trip</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Departure Date
+                Return Date
               </label>
               <input
                 type="date"
-                value={searchParams.departureDate}
+                value={searchParams.returnDate || ""}
                 onChange={(e) =>
                   setSearchParams({
                     ...searchParams,
-                    departureDate: e.target.value,
+                    returnDate: e.target.value,
                   })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            {searchParams.tripType === "roundtrip" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Return Date
-                </label>
-                <input
-                  type="date"
-                  value={searchParams.returnDate || ""}
-                  onChange={(e) =>
-                    setSearchParams({
-                      ...searchParams,
-                      returnDate: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Passengers
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="9"
-                value={searchParams.passengers}
-                onChange={(e) =>
-                  setSearchParams({
-                    ...searchParams,
-                    passengers: parseInt(e.target.value),
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="md:col-span-3">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-              >
-                {loading ? "Searching..." : "Search Flights"}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Passengers
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="9"
+              value={searchParams.passengers}
+              onChange={(e) =>
+                setSearchParams({
+                  ...searchParams,
+                  passengers: parseInt(e.target.value),
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
-        )}
+          <div className="md:col-span-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+            >
+              {loading ? "Searching..." : "Search Flights"}
+            </button>
+          </div>
+        </form>
+      </div>
 
-        {searchDone && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="md:col-span-1">
-              <SearchFilters filters={filters} onFiltersChange={setFilters} />
-            </div>
-            <div className="md:col-span-3 space-y-8">
-              {/* Outbound */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
+      {searchDone && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="md:col-span-1">
+            <SearchFilters filters={filters} onFiltersChange={setFilters} />
+          </div>
+          <div className="md:col-span-3 space-y-8">
+            <section>
+              <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {isRoundTrip ? "✈ Outbound Flights" : "✈ Available Flights"} —{" "}
+                  {outbound.length} found
+                </h3>
+              </div>
+              {outbound.length > 0 ? (
+                outbound.map((flight) => (
+                  <FlightCard
+                    key={flight.flightKey}
+                    flight={flight}
+                    onSelect={handleFlightSelect}
+                  />
+                ))
+              ) : (
+                <div className="bg-white p-8 rounded-lg text-center">
+                  <p className="text-gray-500">
+                    No flights match your filters. Try adjusting them.
+                  </p>
+                </div>
+              )}
+            </section>
+
+            {/* round-trip only, return flights) */}
+            {isRoundTrip && (
               <section>
                 <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {isRoundTrip ? "✈ Outbound Flights" : "✈ Available Flights"}{" "}
-                    — {outbound.length} found
+                    ↩ Return Flights — {returnFlights.length} found
                   </h3>
                 </div>
-                {outbound.length > 0 ? (
-                  outbound.map((flight) => (
+                {returnFlights.length > 0 ? (
+                  returnFlights.map((flight) => (
                     <FlightCard
                       key={flight.flightKey}
                       flight={flight}
@@ -301,41 +311,15 @@ export default function FlightsPage() {
                 ) : (
                   <div className="bg-white p-8 rounded-lg text-center">
                     <p className="text-gray-500">
-                      No flights match your filters. Try adjusting them.
+                      No return flights match your filters.
                     </p>
                   </div>
                 )}
               </section>
-
-              {/* Return (round-trip only) */}
-              {isRoundTrip && (
-                <section>
-                  <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      ↩ Return Flights — {returnFlights.length} found
-                    </h3>
-                  </div>
-                  {returnFlights.length > 0 ? (
-                    returnFlights.map((flight) => (
-                      <FlightCard
-                        key={flight.flightKey}
-                        flight={flight}
-                        onSelect={handleFlightSelect}
-                      />
-                    ))
-                  ) : (
-                    <div className="bg-white p-8 rounded-lg text-center">
-                      <p className="text-gray-500">
-                        No return flights match your filters.
-                      </p>
-                    </div>
-                  )}
-                </section>
-              )}
-            </div>
+            )}
           </div>
-        )}
-      </main>
-    </div>
+        </div>
+      )}
+    </main>
   );
 }

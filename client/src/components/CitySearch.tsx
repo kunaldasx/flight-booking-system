@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo, useState } from "react";
 import { Airport } from "@/types";
 
 interface CitySearchProps {
@@ -19,73 +19,26 @@ export default function CitySearch({
   const [inputValue, setInputValue] = useState(
     value && airports[value] ? `${airports[value].city} (${value})` : "",
   );
-  const [suggestions, setSuggestions] = useState<Airport[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Filter airports based on input
-  useEffect(() => {
-    if (inputValue.trim().length === 0) {
-      setSuggestions([]);
-      setIsOpen(false);
-      return;
-    }
-
-    const query = inputValue.toLowerCase();
-    const filtered = Object.values(airports)
+  const suggestions = useMemo(() => {
+    const query = inputValue.trim().toLowerCase();
+    if (!query) return [];
+    return Object.values(airports)
       .filter(
         (airport) =>
           airport.city.toLowerCase().includes(query) ||
           airport.code.toLowerCase().includes(query) ||
           airport.name.toLowerCase().includes(query),
       )
-      .slice(0, 8); // Limit to 8 suggestions
-
-    setSuggestions(filtered);
-    setIsOpen(filtered.length > 0);
-    setHighlightedIndex(-1);
+      .slice(0, 8);
   }, [inputValue, airports]);
 
-  const handleSelect = (airport: Airport) => {
-    setInputValue(`${airport.city} (${airport.code})`);
-    onChange(airport.code);
-    setIsOpen(false);
-    setSuggestions([]);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen) return;
-
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setHighlightedIndex((prev) =>
-          prev < suggestions.length - 1 ? prev + 1 : prev,
-        );
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (highlightedIndex >= 0) {
-          handleSelect(suggestions[highlightedIndex]);
-        }
-        break;
-      case "Escape":
-        e.preventDefault();
-        setIsOpen(false);
-        break;
-      default:
-        break;
-    }
-  };
+  const isOpen = suggestions.length > 0;
 
   useEffect(() => {
-    // Close suggestions when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (
         inputRef.current &&
@@ -93,13 +46,17 @@ export default function CitySearch({
         suggestionsRef.current &&
         !suggestionsRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        setInputValue("");
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleSelect = (airport: Airport) => {
+    setInputValue(`${airport.city} (${airport.code})`);
+    onChange(airport.code);
+  };
 
   return (
     <div>
@@ -113,14 +70,15 @@ export default function CitySearch({
           ref={inputRef}
           type="text"
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => inputValue && isOpen && setIsOpen(true)}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setHighlightedIndex(-1);
+          }}
           placeholder={placeholder}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
-        {isOpen && suggestions.length > 0 && (
+        {isOpen && (
           <div
             ref={suggestionsRef}
             className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
@@ -128,6 +86,7 @@ export default function CitySearch({
             {suggestions.map((airport, index) => (
               <div
                 key={airport.code}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(airport)}
                 className={`px-4 py-2 cursor-pointer transition-colors ${
                   index === highlightedIndex

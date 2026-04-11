@@ -94,4 +94,16 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/airports", (_req: Request, res: Response) => {
+  try {
+    const metaData = (flightsData as any).data.result.metaData;
+    const airports = extractAirports(metaData);
+    const airlines = extractAirlines(metaData);
+    res.json({ success: true, airports, airlines });
+  } catch (error) {
+    console.error("Airports fetch error:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch airports" });
+  }
+});
+
 export default router;

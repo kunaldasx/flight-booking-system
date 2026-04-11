@@ -5,7 +5,6 @@ interface SearchFiltersProps {
   onFiltersChange: (filters: SearchParams) => void;
 }
 
-// ── FIX: raised MAX_PRICE to cover all flights in the dataset (~57 000+) ────
 const MAX_PRICE = 200_000;
 const MIN_PRICE = 1_000;
 
@@ -24,7 +23,6 @@ export default function SearchFilters({
     onFiltersChange({ ...filters, stops: value });
   };
 
-  // ── FIX: departure time range handler ─────────────────────────────────────
   const handleTimeChange = (type: "start" | "end", value: string) => {
     onFiltersChange({
       ...filters,
@@ -42,6 +40,8 @@ export default function SearchFilters({
   const clearTimeRange = () => {
     onFiltersChange({
       ...filters,
+      priceRange: { min: MIN_PRICE, max: MAX_PRICE },
+      stops: undefined,
       departureTimeRange: undefined,
     });
   };
@@ -50,7 +50,6 @@ export default function SearchFilters({
     <div className="bg-white p-4 rounded-lg shadow-sm mb-6 sticky top-4">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
 
-      {/* ── Price Range ─────────────────────────────────────────────────── */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Price Range
@@ -91,7 +90,6 @@ export default function SearchFilters({
         </div>
       </div>
 
-      {/* ── Stops ────────────────────────────────────────────────────────── */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Stops
@@ -120,8 +118,6 @@ export default function SearchFilters({
         </div>
       </div>
 
-      {/* ── FIX: Departure Time Range ────────────────────────────────────── */}
-      {/* Required by the PDF spec but was completely missing */}
       <div className="mb-2">
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-gray-700">

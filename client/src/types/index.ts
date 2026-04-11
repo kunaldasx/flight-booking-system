@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Airport {
   code: string;
   name: string;
@@ -11,16 +12,15 @@ export interface Airline {
   name: string;
 }
 
-// ── Fare tier (one flight can have 2–3 of these) ─────────────────────────────
 export interface FareBaggage {
   piece: number;
-  quantity: number; // weight in KG (0 = not allowed)
+  quantity: number;
   unit: string;
 }
 
 export interface FareBenefit {
-  benefitType: string; // "SEAT" | "MEAL"
-  value: string; // "FREE" | "PAID"
+  benefitType: string;
+  value: string;
   description: string;
   shortDescription: string;
 }
@@ -28,18 +28,18 @@ export interface FareBenefit {
 export interface FareTier {
   fareId: string;
   fareGroup: string;
-  brandName: string; // "ECONOMY CLASSIC" | "ECONOMY CONVENIENCE" | "FLEXI" …
-  cabinType: string; // "ECONOMY" | "BUSINESS" …
+  brandName: string;
+  cabinType: string;
   fareClass: string;
   fareBasisCode: string;
-  pricePerAdult: string; // numeric string, INR
-  totalCTC: string; // total cost for all pax
+  pricePerAdult: string;
+  totalCTC: string;
   refundable: boolean;
   checkInBaggageAllowed: boolean;
   availableSeats: number;
   benefits: FareBenefit[];
-  cabinBaggage: FareBaggage | null; // carry-on
-  checkInBaggage: FareBaggage | null; // hold luggage
+  cabinBaggage: FareBaggage | null;
+  checkInBaggage: FareBaggage | null;
 }
 
 export interface Flight {
@@ -50,23 +50,23 @@ export interface Flight {
   arrivalTime: string;
   duration: string;
   stops: number;
-  /** Cheapest fare's pricePerAdult — used for sorting and the price filter */
+
   price: string;
   flightNumber: string;
   segments: any[];
   route: string;
   routeWithNames: string;
-  /** All available fare tiers for this flight */
+
   fares: FareTier[];
-  /** Legacy — kept for backward compat; equals fares[cheapest].cabinType */
+
   cabinType: string;
   availableSeats: number;
   refundable: boolean;
   departureAirportName: string;
   arrivalAirportName: string;
-  /** Currently selected fareId (set by FlightCard when user picks a tier) */
+
   fareId: string;
-  journeyLabel?: string; // "Outbound" | "Return"
+  journeyLabel?: string;
 }
 
 export interface SearchParams {
