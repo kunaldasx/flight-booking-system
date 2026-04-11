@@ -5,7 +5,26 @@ import { generateBookingId } from "../utils/flightUtils";
 
 const router = Router();
 
-// POST /api/booking - Create a booking
+// GET /api/booking — list all bookings (newest first)
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const skip = (page - 1) * limit;
+
+    const [bookings, total] = await Promise.all([
+      Booking.find().sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Booking.countDocuments(),
+    ]);
+
+    res.json({ success: true, bookings, total, page, limit });
+  } catch (error) {
+    console.error("Get all bookings error:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch bookings" });
+  }
+});
+
+// POST /api/booking — create a booking
 router.post("/", async (req: Request, res: Response) => {
   try {
     const { searchId, traveller } = req.body;
@@ -16,7 +35,6 @@ router.post("/", async (req: Request, res: Response) => {
         .json({ success: false, error: "Missing required fields" });
     }
 
-    // Validate traveller data
     const requiredFields = ["name", "email", "phone", "dob", "gender"];
     for (const field of requiredFields) {
       if (!traveller[field]) {
@@ -27,7 +45,6 @@ router.post("/", async (req: Request, res: Response) => {
       }
     }
 
-    // Get the selected flight data
     const selectedFlight = await SelectedFlight.findOne({ searchId }).sort({
       createdAt: -1,
     });
@@ -39,10 +56,8 @@ router.post("/", async (req: Request, res: Response) => {
       });
     }
 
-    // Generate booking ID
     const bookingId = generateBookingId();
 
-    // Create booking (lock the price)
     const booking = new Booking({
       bookingId,
       searchId,
@@ -72,12 +87,12 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/booking/:bookingId - Get booking details
+// GET /api/booking/:bookingId — get single booking
 router.get("/:bookingId", async (req: Request, res: Response) => {
   try {
-    const { bookingId } = req.params;
-
-    const booking = await Booking.findOne({ bookingId });
+    const booking = await Booking.findOne({
+      bookingId: req.params.bookingId,
+    }).lean();
 
     if (!booking) {
       return res

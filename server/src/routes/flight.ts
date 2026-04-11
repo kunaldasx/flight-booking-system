@@ -1,10 +1,15 @@
 import { Router, Request, Response } from "express";
 import { SelectedFlight } from "../models/SelectedFlight";
 import flightsData from "../data/flights.json";
+import {
+  extractFlightCards,
+  extractAirports,
+  extractAirlines,
+} from "../utils/flightUtils";
 
 const router = Router();
 
-// POST /api/flight/select - Save selected flight
+// POST /api/flight/select — save selected flight + processed card
 router.post("/select", async (req: Request, res: Response) => {
   try {
     const { searchId, flightKey, fareId } = req.body;
@@ -15,23 +20,26 @@ router.post("/select", async (req: Request, res: Response) => {
         .json({ success: false, error: "Missing required fields" });
     }
 
-    // Find the flight in the sectors
     const result = (flightsData as any).data.result;
     const sectors = result.sectors;
+    const journeys: Record<string, { sector: string }> = result.journeys || {};
+    const metaData = result.metaData;
+    const airports = extractAirports(metaData);
+    const airlines = extractAirlines(metaData);
 
-    let flightData = null;
-    let selectedFareData = null;
+    let flightData: any = null;
+    let selectedFareData: any = null;
+    let foundSectorKey = "";
 
     for (const sectorKey in sectors) {
       const sector = sectors[sectorKey];
       if (sector[flightKey]) {
         flightData = sector[flightKey];
-        // Find the matching fare by fareId
-        if (flightData.fares && flightData.fares.length > 0) {
-          selectedFareData =
-            flightData.fares.find((f: any) => f.fareId === fareId) ||
-            flightData.fares[0];
-        }
+        foundSectorKey = sectorKey;
+        selectedFareData =
+          flightData.fares?.find((f: any) => f.fareId === fareId) ??
+          flightData.fares?.[0] ??
+          null;
         break;
       }
     }
@@ -42,13 +50,31 @@ router.post("/select", async (req: Request, res: Response) => {
         .json({ success: false, error: "Flight not found" });
     }
 
-    // Save to database
+    // Build a processed FlightCard so the admin page can display full details
+    const isolatedSector = { [foundSectorKey]: { [flightKey]: flightData } };
+    const cards = extractFlightCards(
+      isolatedSector,
+      airports,
+      airlines,
+      journeys,
+    );
+    let processedFlight = cards[0] ?? null;
+    if (processedFlight) {
+      // Pin the user's chosen fare
+      processedFlight.fareId = fareId;
+      const chosenFare = processedFlight.fares.find(
+        (f: any) => f.fareId === fareId,
+      );
+      if (chosenFare) processedFlight.price = chosenFare.pricePerAdult;
+    }
+
     const selectedFlight = new SelectedFlight({
       searchId,
       flightKey,
       fareId,
       flightData,
       selectedFareData,
+      processedFlightData: processedFlight,
     });
 
     await selectedFlight.save();
@@ -65,6 +91,31 @@ router.post("/select", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Flight select error:", error);
     res.status(500).json({ success: false, error: "Failed to select flight" });
+  }
+});
+
+// GET /api/flight/selected — list all selected flights (newest first)
+router.get("/selected", async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const skip = (page - 1) * limit;
+
+    const [selectedFlights, total] = await Promise.all([
+      SelectedFlight.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      SelectedFlight.countDocuments(),
+    ]);
+
+    res.json({ success: true, selectedFlights, total, page, limit });
+  } catch (error) {
+    console.error("Get selected flights error:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch selected flights" });
   }
 });
 
