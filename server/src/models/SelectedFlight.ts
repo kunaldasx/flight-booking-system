@@ -1,0 +1,26 @@
+import mongoose, { Schema, Document } from "mongoose";
+
+export interface ISelectedFlight extends Document {
+  searchId: string;
+  flightKey: string;
+  fareId: string;
+  flightData: any;
+  selectedFareData: any;
+  createdAt: Date;
+}
+
+const SelectedFlightSchema: Schema = new Schema(
+  {
+    searchId: { type: String, required: true },
+    flightKey: { type: String, required: true },
+    fareId: { type: String, required: true },
+    flightData: { type: Schema.Types.Mixed, required: true },
+    selectedFareData: { type: Schema.Types.Mixed, required: true },
+  },
+  { timestamps: true },
+);
+
+export const SelectedFlight = mongoose.model<ISelectedFlight>(
+  "SelectedFlight",
+  SelectedFlightSchema,
+);
