@@ -5,6 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { flightService } from "@/services/flightService";
 import { Flight } from "@/types";
+import AirlineLogo from "@/assets/airLineLogo.jpg";
+import Image from "next/image";
 
 interface SelectedFlightRecord {
   _id: string;
@@ -90,7 +92,7 @@ export default function SelectedFlightsPage() {
     <main className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">
+          <h2 className="text-2xl font-medium text-gray-900">
             Selected Flights
           </h2>
         </div>
@@ -101,8 +103,8 @@ export default function SelectedFlightsPage() {
           <p className="text-gray-400">Loading selected flights…</p>
         </div>
       ) : records.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-          <p className="text-gray-500 text-lg">No selected flights yet.</p>
+        <div className="bg-white border rounded p-12 text-center">
+          <p className="text-gray-500 text-base">No selected flights yet.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -114,13 +116,13 @@ export default function SelectedFlightsPage() {
 
             const journeyColor =
               flight?.journeyLabel === "Return"
-                ? "bg-purple-100 text-purple-800"
-                : "bg-indigo-100 text-indigo-800";
+                ? "bg-gray-100 text-gray-700"
+                : "bg-gray-100 text-gray-700";
 
             return (
               <div
                 key={record._id}
-                className="bg-white border border-gray-200 rounded-lg shadow-sm p-5"
+                className="bg-white border border-gray-200 rounded shadow-sm p-5"
               >
                 <div className="flex flex-col md:flex-row md:items-start gap-4">
                   <div className="flex-1">
@@ -128,15 +130,14 @@ export default function SelectedFlightsPage() {
                       <>
                         {/* Airline row */}
                         <div className="flex items-center gap-2 mb-3">
-                          <svg
-                            className="w-5 h-5 text-blue-600 shrink-0"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5v5.5L2 16v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-                          </svg>
+                          <Image
+                            src={AirlineLogo}
+                            alt={flight.airlineName}
+                            width={100}
+                            height={100}
+                          />
                           <div>
-                            <p className="font-semibold text-gray-900">
+                            <p className="font-medium text-gray-900">
                               {flight.airlineName}
                             </p>
                             <p className="text-xs text-gray-500">
@@ -145,7 +146,7 @@ export default function SelectedFlightsPage() {
                           </div>
                           {flight.journeyLabel && (
                             <span
-                              className={`ml-1 text-xs px-2 py-0.5 rounded font-medium ${journeyColor}`}
+                              className={`ml-1 text-xs px-2 py-0.5 rounded ${journeyColor}`}
                             >
                               {flight.journeyLabel}
                             </span>
@@ -160,13 +161,14 @@ export default function SelectedFlightsPage() {
                         {/* Times */}
                         <div className="flex items-center gap-4 mb-3">
                           <div>
-                            <p className="text-base font-bold text-gray-900">
+                            <p className="text-base font-semibold text-gray-900">
                               {formatTime(flight.departureTime)}
                             </p>
                             <p className="text-xs text-gray-500">
                               {flight.departureAirportName}
                             </p>
                           </div>
+
                           <div className="flex-1 text-center">
                             <p className="text-xs text-gray-400">
                               {flight.duration}
@@ -181,8 +183,9 @@ export default function SelectedFlightsPage() {
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                           </div>
+
                           <div className="text-right">
-                            <p className="text-base font-bold text-gray-900">
+                            <p className="text-base font-semibold text-gray-900">
                               {formatTime(flight.arrivalTime)}
                             </p>
                             <p className="text-xs text-gray-500">
@@ -197,16 +200,16 @@ export default function SelectedFlightsPage() {
                               <span className="text-gray-400">Fare: </span>
                               {fare.brandName}
                             </span>
+
                             <span>
-                              <span className="text-gray-400">🎒 Cabin: </span>
+                              <span className="text-gray-400">Cabin: </span>
                               {fare.cabinBaggage?.quantity
                                 ? `${fare.cabinBaggage.piece}pc · ${fare.cabinBaggage.quantity}${fare.cabinBaggage.unit}`
                                 : "Not included"}
                             </span>
+
                             <span>
-                              <span className="text-gray-400">
-                                🧳 Check-in:{" "}
-                              </span>
+                              <span className="text-gray-400">Check-in: </span>
                               {fare.checkInBaggageAllowed &&
                               fare.checkInBaggage?.quantity
                                 ? `${fare.checkInBaggage.piece}pc · ${fare.checkInBaggage.quantity}${fare.checkInBaggage.unit}`
@@ -214,14 +217,8 @@ export default function SelectedFlightsPage() {
                                   ? "Included"
                                   : "Not included"}
                             </span>
-                            <span
-                              className={
-                                fare.refundable
-                                  ? "text-green-600"
-                                  : "text-red-500"
-                              }
-                            >
-                              ↩{" "}
+
+                            <span>
                               {fare.refundable
                                 ? "Refundable"
                                 : "Non-refundable"}
@@ -239,7 +236,7 @@ export default function SelectedFlightsPage() {
                   <div className="md:w-48 flex flex-col items-end gap-3 shrink-0">
                     {fare && (
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-green-600">
+                        <p className="text-xl font-semibold text-gray-900">
                           ₹
                           {parseFloat(fare.pricePerAdult).toLocaleString(
                             "en-IN",
@@ -259,7 +256,7 @@ export default function SelectedFlightsPage() {
                     <button
                       onClick={() => handleBook(record)}
                       disabled={!flight}
-                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
+                      className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium py-2 px-4 rounded transition-colors"
                     >
                       Book Now
                     </button>
@@ -271,7 +268,6 @@ export default function SelectedFlightsPage() {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-3 mt-8">
           <button
@@ -281,9 +277,11 @@ export default function SelectedFlightsPage() {
           >
             ← Previous
           </button>
+
           <span className="text-sm text-gray-600">
             Page {page} of {totalPages}
           </span>
+
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}

@@ -47,111 +47,92 @@ export default function SearchFilters({
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm mb-6 sticky top-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
+    <div className="bg-white rounded-lg shadow-md p-3 mb-4 sticky top-4">
+      <h3 className="font-medium mb-3">Filters</h3>
 
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Price Range
-        </label>
-        <div className="flex justify-between text-xs text-gray-500 mb-1">
+      <div className="mb-4">
+        <label className="text-sm block mb-1">Price Range</label>
+
+        <div className="text-xs text-gray-500 flex justify-between mb-1">
           <span>₹{filters.priceRange.min.toLocaleString("en-IN")}</span>
           <span>₹{filters.priceRange.max.toLocaleString("en-IN")}</span>
         </div>
-        <div className="space-y-2">
-          <div>
-            <label className="text-xs text-gray-500">Min</label>
-            <input
-              type="range"
-              min={MIN_PRICE}
-              max={MAX_PRICE}
-              step={1000}
-              value={filters.priceRange.min}
-              onChange={(e) =>
-                handlePriceChange("min", parseInt(e.target.value))
-              }
-              className="w-full accent-blue-600"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-gray-500">Max</label>
-            <input
-              type="range"
-              min={MIN_PRICE}
-              max={MAX_PRICE}
-              step={1000}
-              value={filters.priceRange.max}
-              onChange={(e) =>
-                handlePriceChange("max", parseInt(e.target.value))
-              }
-              className="w-full accent-blue-600"
-            />
-          </div>
+
+        <div>
+          <div className="text-xs text-gray-500">Min</div>
+          <input
+            type="range"
+            min={MIN_PRICE}
+            max={MAX_PRICE}
+            step={1000}
+            value={filters.priceRange.min}
+            onChange={(e) => handlePriceChange("min", parseInt(e.target.value))}
+            className="w-full"
+          />
+        </div>
+
+        <div className="mt-1">
+          <div className="text-xs text-gray-500">Max</div>
+          <input
+            type="range"
+            min={MIN_PRICE}
+            max={MAX_PRICE}
+            step={1000}
+            value={filters.priceRange.max}
+            onChange={(e) => handlePriceChange("max", parseInt(e.target.value))}
+            className="w-full"
+          />
         </div>
       </div>
 
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Stops
-        </label>
-        <div className="space-y-2">
+      <div className="mb-4">
+        <label className="text-sm block mb-1">Stops</label>
+
+        <div className="space-y-1 text-sm">
           {[
-            { label: "All Flights", value: undefined },
+            { label: "All", value: undefined },
             { label: "Non-stop", value: 0 },
             { label: "1 Stop", value: 1 },
             { label: "2+ Stops", value: 2 },
           ].map(({ label, value }) => (
-            <label
-              key={label}
-              className="flex items-center gap-2 cursor-pointer"
-            >
+            <label key={label} className="flex items-center gap-2">
               <input
                 type="radio"
                 name="stops"
                 checked={filters.stops === value}
                 onChange={() => handleStopsChange(value)}
-                className="accent-blue-600"
               />
-              <span className="text-sm text-gray-700">{label}</span>
+              <span>{label}</span>
             </label>
           ))}
         </div>
       </div>
 
-      <div className="mb-2">
-        <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Departure Time
-          </label>
+      <div>
+        <div className="flex justify-between items-center mb-1">
+          <label className="text-sm">Departure Time</label>
           {filters.departureTimeRange && (
-            <button
-              onClick={clearTimeRange}
-              className="text-xs text-blue-600 hover:underline"
-            >
-              Clear
+            <button onClick={clearTimeRange} className="text-xs text-gray-600">
+              clear
             </button>
           )}
         </div>
-        <div className="space-y-2">
-          <div>
-            <label className="text-xs text-gray-500">From</label>
-            <input
-              type="time"
-              value={filters.departureTimeRange?.start ?? "00:00"}
-              onChange={(e) => handleTimeChange("start", e.target.value)}
-              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-gray-500">To</label>
-            <input
-              type="time"
-              value={filters.departureTimeRange?.end ?? "23:59"}
-              onChange={(e) => handleTimeChange("end", e.target.value)}
-              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
+
+        <div className="text-xs text-gray-500">From</div>
+        <input
+          type="time"
+          value={filters.departureTimeRange?.start ?? "00:00"}
+          onChange={(e) => handleTimeChange("start", e.target.value)}
+          className="w-full border rounded px-2 py-1 mb-2"
+        />
+
+        <div className="text-xs text-gray-500">To</div>
+        <input
+          type="time"
+          value={filters.departureTimeRange?.end ?? "23:59"}
+          onChange={(e) => handleTimeChange("end", e.target.value)}
+          className="w-full border rounded px-2 py-1"
+        />
       </div>
     </div>
   );

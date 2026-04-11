@@ -3,6 +3,8 @@
 
 import { useState, useEffect } from "react";
 import { Flight, FareTier } from "@/types";
+import Image from "next/image";
+import AirlineLogo from "@/assets/airLineLogo.jpg";
 
 interface BookingDetails {
   bookingId: string;
@@ -117,7 +119,7 @@ export default function ConfirmationPage() {
           Your flight has been successfully booked.
         </p>
         {booking && (
-          <p className="mt-3 font-mono text-lg font-semibold text-blue-700 bg-blue-50 inline-block px-4 py-2 rounded-lg">
+          <p className="mt-3 font-mono text-lg font-semibold text-blue-700 inline-block px-4 py-2 rounded-lg">
             {booking.bookingId}
           </p>
         )}
@@ -126,35 +128,33 @@ export default function ConfirmationPage() {
       {booking && (
         <>
           {bookedFlight && (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="bg-blue-50 border-b border-blue-100 px-6 py-3">
-                <h3 className="font-semibold text-gray-900">Flight Details</h3>
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="px-6 py-3">
+                <h3 className="text-2xl font-medium text-gray-800">
+                  Flight Details
+                </h3>
               </div>
+
               <div className="px-6 py-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <svg
-                    className="w-6 h-6 text-blue-600 shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5v5.5L2 16v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-                  </svg>
+                  <Image
+                    src={AirlineLogo}
+                    alt={bookedFlight.airlineName}
+                    width={100}
+                    height={100}
+                  />
+
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-medium text-gray-900">
                       {bookedFlight.airlineName}
                     </p>
                     <p className="text-sm text-gray-500">
                       {bookedFlight.flightNumber}
                     </p>
                   </div>
+
                   {bookedFlight.journeyLabel && (
-                    <span
-                      className={`ml-auto text-xs px-2 py-1 rounded font-medium ${
-                        bookedFlight.journeyLabel === "Return"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-indigo-100 text-indigo-800"
-                      }`}
-                    >
+                    <span className="ml-auto text-xs px-2 py-0.5 border rounded text-gray-600">
                       {bookedFlight.journeyLabel}
                     </span>
                   )}
@@ -169,10 +169,8 @@ export default function ConfirmationPage() {
 
                 <div className="grid grid-cols-3 gap-4 mb-5">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase mb-1">
-                      Departure
-                    </p>
-                    <p className="text-xl font-bold text-gray-900">
+                    <p className="text-xs text-gray-500 mb-1">Departure</p>
+                    <p className="text-lg font-semibold text-gray-900">
                       {formatTime(bookedFlight.departureTime)}
                     </p>
                     <p className="text-sm text-gray-500">
@@ -182,6 +180,7 @@ export default function ConfirmationPage() {
                       {bookedFlight.departureAirportName}
                     </p>
                   </div>
+
                   <div className="text-center self-center">
                     <p className="text-xs text-gray-500 mb-1">
                       {bookedFlight.duration}
@@ -196,11 +195,10 @@ export default function ConfirmationPage() {
                       <div className="flex-1 h-px bg-gray-300" />
                     </div>
                   </div>
+
                   <div className="text-right">
-                    <p className="text-xs text-gray-500 uppercase mb-1">
-                      Arrival
-                    </p>
-                    <p className="text-xl font-bold text-gray-900">
+                    <p className="text-xs text-gray-500 mb-1">Arrival</p>
+                    <p className="text-lg font-semibold text-gray-900">
                       {formatTime(bookedFlight.arrivalTime)}
                     </p>
                     <p className="text-sm text-gray-500">
@@ -213,42 +211,36 @@ export default function ConfirmationPage() {
                 </div>
 
                 {selectedFare && (
-                  <div className="bg-gray-50 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                  <div className="bg-gray-50 rounded px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
                     <div>
                       <span className="text-gray-500">Fare: </span>
-                      <span className="font-medium text-gray-800">
+                      <span className="text-gray-800">
                         {selectedFare.brandName}
                       </span>
                     </div>
+
                     <div>
-                      <span className="text-gray-500">🎒 Cabin: </span>
-                      <span className="font-medium">
-                        {baggageLabel(selectedFare, "cabin")}
-                      </span>
+                      <span className="text-gray-500">Cabin: </span>
+                      <span>{baggageLabel(selectedFare, "cabin")}</span>
                     </div>
+
                     <div>
-                      <span className="text-gray-500">🧳 Check-in: </span>
-                      <span className="font-medium">
-                        {baggageLabel(selectedFare, "checkin")}
-                      </span>
+                      <span className="text-gray-500">Check-in: </span>
+                      <span>{baggageLabel(selectedFare, "checkin")}</span>
                     </div>
+
                     {selectedFare.benefits.map((b) => (
                       <div key={b.benefitType}>
                         <span className="text-gray-500">
-                          {b.benefitType === "MEAL" ? "🍽 Meal: " : "💺 Seat: "}
+                          {b.benefitType === "MEAL" ? "Meal: " : "Seat: "}
                         </span>
-                        <span
-                          className={`font-medium ${b.value === "FREE" ? "text-green-600" : "text-amber-500"}`}
-                        >
-                          {b.value === "FREE" ? "Free" : "Paid"}
-                        </span>
+                        <span>{b.value === "FREE" ? "Free" : "Paid"}</span>
                       </div>
                     ))}
+
                     <div>
-                      <span className="text-gray-500">↩ Refund: </span>
-                      <span
-                        className={`font-medium ${selectedFare.refundable ? "text-green-600" : "text-red-500"}`}
-                      >
+                      <span className="text-gray-500">Refund: </span>
+                      <span>
                         {selectedFare.refundable
                           ? "Refundable"
                           : "Non-refundable"}
@@ -260,58 +252,62 @@ export default function ConfirmationPage() {
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="bg-blue-50 border-b border-blue-100 px-6 py-3">
-              <h3 className="font-semibold text-gray-900">Booking Summary</h3>
+          <div className="bg-white rounded-lg shadow-md mt-4">
+            <div className=" px-6 py-3">
+              <h3 className="text-2xl font-medium text-gray-800">
+                Booking Summary
+              </h3>
             </div>
+
             <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Booking info */}
               <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase">
+                <h4 className="text-xs font-medium text-gray-500 uppercase">
                   Booking Information
                 </h4>
+
                 <div>
                   <p className="text-xs text-gray-500">Booking ID</p>
-                  <p className="font-mono font-semibold text-gray-900">
+                  <p className="font-mono font-medium text-gray-900">
                     {booking.bookingId}
                   </p>
                 </div>
+
                 <div>
                   <p className="text-xs text-gray-500">Price Paid</p>
-                  <p className="text-xl font-bold text-green-600">
+                  <p className="text-lg font-semibold text-gray-900">
                     ₹{displayPrice}
                   </p>
                   <p className="text-xs text-gray-400">per adult</p>
                 </div>
+
                 <div>
                   <p className="text-xs text-gray-500">Booked On</p>
-                  <p className="font-medium text-gray-900">
+                  <p className="text-gray-900">
                     {new Date(booking.createdAt).toLocaleString("en-IN")}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase">
+                <h4 className="text-xs font-medium text-gray-500 uppercase">
                   Passenger
                 </h4>
+
                 <div>
                   <p className="text-xs text-gray-500">Name</p>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {booking.traveller.name}
                   </p>
                 </div>
+
                 <div>
                   <p className="text-xs text-gray-500">Email</p>
-                  <p className="font-medium text-gray-900">
-                    {booking.traveller.email}
-                  </p>
+                  <p className="text-gray-900">{booking.traveller.email}</p>
                 </div>
+
                 <div>
                   <p className="text-xs text-gray-500">Phone</p>
-                  <p className="font-medium text-gray-900">
-                    {booking.traveller.phone}
-                  </p>
+                  <p className="text-gray-900">{booking.traveller.phone}</p>
                 </div>
               </div>
             </div>

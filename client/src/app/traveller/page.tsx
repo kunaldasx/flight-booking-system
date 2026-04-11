@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { flightService } from "@/services/flightService";
 import { TravellerData, Flight, FareTier } from "@/types";
+import Image from "next/image";
+import AirlineLogo from "@/assets/airLineLogo.jpg";
 
 export default function TravellerPage() {
   const router = useRouter();
@@ -108,148 +110,119 @@ export default function TravellerPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
-      <div className="bg-white rounded-lg shadow-md mb-8 overflow-hidden">
-        <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Selected Flight
-          </h2>
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-2xl font-semibold">Selected Flight</h2>
+
           {selectedFlight.journeyLabel && (
-            <span
-              className={`text-xs px-2 py-1 rounded font-medium ${
-                selectedFlight.journeyLabel === "Return"
-                  ? "bg-purple-100 text-purple-800"
-                  : "bg-indigo-100 text-indigo-800"
-              }`}
-            >
+            <span className="text-xs px-2 py-0.5 border rounded text-gray-600">
               {selectedFlight.journeyLabel}
             </span>
           )}
         </div>
 
-        <div className="px-6 py-5">
-          <div className="flex items-center gap-3 mb-4">
-            <svg
-              className="w-6 h-6 text-blue-600 shrink-0"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5v5.5L2 16v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-            </svg>
-            <div>
-              <p className="font-semibold text-gray-900 text-lg">
-                {selectedFlight.airlineName}
-              </p>
-              <p className="text-sm text-gray-500">
-                {selectedFlight.flightNumber}
-              </p>
+        <div className="flex items-center gap-3 mb-4">
+          <Image
+            src={AirlineLogo}
+            alt={selectedFlight.airlineName}
+            width={100}
+            height={100}
+          />
+          <div className="mb-3">
+            <div className="text-sm font-medium">
+              {selectedFlight.airlineName}
+            </div>
+            <div className="text-xs text-gray-500">
+              {selectedFlight.flightNumber}
+            </div>
+          </div>
+        </div>
+
+        <div className="text-sm text-gray-700">{selectedFlight.route}</div>
+        <div className="text-xs text-gray-400 mb-3">
+          {selectedFlight.routeWithNames}
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div>
+            <div className="text-xs text-gray-500 mb-1">Departure</div>
+            <div className="text-lg font-semibold">
+              {formatTime(selectedFlight.departureTime)}
+            </div>
+            <div className="text-xs text-gray-500">
+              {formatDate(selectedFlight.departureTime)}
+            </div>
+            <div className="text-xs text-gray-600">
+              {selectedFlight.departureAirportName}
             </div>
           </div>
 
-          {/* Route */}
-          <p className="text-sm text-gray-600 mb-1">{selectedFlight.route}</p>
-          <p className="text-xs text-gray-400 mb-5">
-            {selectedFlight.routeWithNames}
-          </p>
-
-          {/* Time */}
-          <div className="grid grid-cols-3 gap-4 mb-5">
-            <div>
-              <p className="text-xs text-gray-500 uppercase mb-1">Departure</p>
-              <p className="text-xl font-bold text-gray-900">
-                {formatTime(selectedFlight.departureTime)}
-              </p>
-              <p className="text-sm text-gray-500">
-                {formatDate(selectedFlight.departureTime)}
-              </p>
-              <p className="text-sm text-gray-600 mt-0.5">
-                {selectedFlight.departureAirportName}
-              </p>
-            </div>
-
-            <div className="text-center self-center">
-              <p className="text-xs text-gray-500 mb-1">
-                {selectedFlight.duration}
-              </p>
-              <div className="flex items-center gap-1">
-                <div className="flex-1 h-px bg-gray-300" />
-                <span className="text-xs text-gray-400 whitespace-nowrap">
-                  {selectedFlight.stops === 0
-                    ? "Non-stop"
-                    : `${selectedFlight.stops} Stop${selectedFlight.stops > 1 ? "s" : ""}`}
-                </span>
-                <div className="flex-1 h-px bg-gray-300" />
-              </div>
-            </div>
-
-            <div className="text-right">
-              <p className="text-xs text-gray-500 uppercase mb-1">Arrival</p>
-              <p className="text-xl font-bold text-gray-900">
-                {formatTime(selectedFlight.arrivalTime)}
-              </p>
-              <p className="text-sm text-gray-500">
-                {formatDate(selectedFlight.arrivalTime)}
-              </p>
-              <p className="text-sm text-gray-600 mt-0.5">
-                {selectedFlight.arrivalAirportName}
-              </p>
+          <div className="text-center text-xs text-gray-500 self-center">
+            <div className="mb-1">{selectedFlight.duration}</div>
+            <div className="flex items-center gap-1">
+              <div className="flex-1 h-px bg-gray-300" />
+              <span>
+                {selectedFlight.stops === 0
+                  ? "Non-stop"
+                  : `${selectedFlight.stops} stop${selectedFlight.stops > 1 ? "s" : ""}`}
+              </span>
+              <div className="flex-1 h-px bg-gray-300" />
             </div>
           </div>
 
-          {/* Price details */}
-          {selectedFare && (
-            <div className="bg-gray-50 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <div className="text-right">
+            <div className="text-xs text-gray-500 mb-1">Arrival</div>
+            <div className="text-lg font-semibold">
+              {formatTime(selectedFlight.arrivalTime)}
+            </div>
+            <div className="text-xs text-gray-500">
+              {formatDate(selectedFlight.arrivalTime)}
+            </div>
+            <div className="text-xs text-gray-600">
+              {selectedFlight.arrivalAirportName}
+            </div>
+          </div>
+        </div>
+
+        {selectedFare && (
+          <div className="border rounded p-3 text-sm">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
               <div>
-                <span className="text-gray-500">Fare: </span>
-                <span className="font-medium text-gray-800">
-                  {selectedFare.brandName}
-                </span>
+                <span className="text-gray-500">Fare:</span>{" "}
+                {selectedFare.brandName}
               </div>
+
               <div>
-                <span className="text-gray-500">🎒 Cabin: </span>
-                <span className="font-medium text-gray-800">
-                  {baggageLabel(selectedFare, "cabin")}
-                </span>
+                <span className="text-gray-500">Cabin:</span>{" "}
+                {baggageLabel(selectedFare, "cabin")}
               </div>
+
               <div>
-                <span className="text-gray-500">🧳 Check-in: </span>
-                <span className="font-medium text-gray-800">
-                  {baggageLabel(selectedFare, "checkin")}
-                </span>
+                <span className="text-gray-500">Check-in:</span>{" "}
+                {baggageLabel(selectedFare, "checkin")}
               </div>
+
               {selectedFare.benefits.map((b) => (
                 <div key={b.benefitType}>
-                  <span className="text-gray-500">
-                    {b.benefitType === "MEAL" ? "🍽 Meal: " : "💺 Seat: "}
-                  </span>
-                  <span
-                    className={`font-medium ${
-                      b.value === "FREE" ? "text-green-600" : "text-amber-500"
-                    }`}
-                  >
-                    {b.value === "FREE" ? "Free" : "Paid"}
-                  </span>
+                  <span className="text-gray-500">{b.benefitType}:</span>{" "}
+                  {b.value === "FREE" ? "Free" : "Paid"}
                 </div>
               ))}
+
               <div>
-                <span className="text-gray-500">↩ Refund: </span>
-                <span
-                  className={`font-medium ${
-                    selectedFare.refundable ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  {selectedFare.refundable ? "Refundable" : "Non-refundable"}
-                </span>
-              </div>
-              <div className="ml-auto">
-                <span className="text-gray-500">Price: </span>
-                <span className="font-bold text-green-600 text-base">
-                  ₹{price.toLocaleString("en-IN")}
-                </span>
-                <span className="text-gray-400 text-xs"> /adult</span>
+                <span className="text-gray-500">Refund:</span>{" "}
+                {selectedFare.refundable ? "Yes" : "No"}
               </div>
             </div>
-          )}
-        </div>
+
+            <div className="flex justify-between items-center pt-2 border-t">
+              <div className="font-semibold">
+                ₹{price.toLocaleString("en-IN")}
+                <span className="text-xs text-gray-500 ml-1">/adult</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md">
