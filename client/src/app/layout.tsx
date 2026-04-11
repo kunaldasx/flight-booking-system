@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ReactNode } from "react";
-import "@/styles/globals.css";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Flight Booking System",

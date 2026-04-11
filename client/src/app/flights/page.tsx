@@ -38,12 +38,30 @@ export default function FlightsPage() {
     const savedFlights = localStorage.getItem("searchResults");
     const savedSearchId = localStorage.getItem("currentSearchId");
     const savedAirports = localStorage.getItem("airports");
+
     if (savedFlights) {
-      setFlights(JSON.parse(savedFlights));
-      setSearchDone(true);
-      if (savedSearchId) setSearchId(savedSearchId);
+      try {
+        const parsed: Flight[] = JSON.parse(savedFlights);
+        // Invalidate cache if flights are missing the `fares` field (old format)
+        const isStale = parsed.length > 0 && !Array.isArray(parsed[0]?.fares);
+        if (isStale) {
+          localStorage.removeItem("searchResults");
+          localStorage.removeItem("currentSearchId");
+          localStorage.removeItem("airports");
+        } else {
+          setFlights(parsed);
+          setSearchDone(true);
+          if (savedSearchId) setSearchId(savedSearchId);
+        }
+      } catch {
+        localStorage.removeItem("searchResults");
+      }
     }
-    if (savedAirports) setAirports(JSON.parse(savedAirports));
+    if (savedAirports) {
+      try {
+        setAirports(JSON.parse(savedAirports));
+      } catch {}
+    }
   }, []);
 
   const handleSearch = async (e: React.FormEvent) => {

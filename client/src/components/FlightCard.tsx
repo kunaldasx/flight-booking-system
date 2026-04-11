@@ -1,4 +1,5 @@
-import { Flight } from "@/types";
+import { useState } from "react";
+import { Flight, FareTier } from "@/types";
 
 interface FlightCardProps {
   flight: Flight;
@@ -6,7 +7,28 @@ interface FlightCardProps {
 }
 
 export default function FlightCard({ flight, onSelect }: FlightCardProps) {
-  // ── FIX: departureTime and arrivalTime are ISO strings; format them ────────
+  // Guard: fares may be undefined when stale localStorage data is rendered
+  // before a fresh search is done with the updated backend.
+  const fares: FareTier[] = flight.fares ?? [];
+  const defaultIdx =
+    fares.length > 0
+      ? Math.max(
+          0,
+          fares.findIndex((f) => f.fareId === flight.fareId),
+        )
+      : 0;
+  const [selectedFareIdx, setSelectedFareIdx] = useState(defaultIdx);
+  const selectedFare: FareTier | undefined = fares[selectedFareIdx];
+
+  // If fares are missing entirely (stale cache), show a minimal skeleton
+  if (!selectedFare) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-3 text-center text-sm text-gray-400">
+        Flight data outdated — please run a new search to refresh.
+      </div>
+    );
+  }
+
   const formatTime = (iso: string) => {
     if (!iso) return "—";
     try {
@@ -32,22 +54,42 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
     }
   };
 
-  const getStopsLabel = (stops: number) => {
-    if (stops === 0) return "Non-stop";
-    if (stops === 1) return "1 Stop";
-    return `${stops} Stops`;
+  const getStopsLabel = (stops: number) =>
+    stops === 0 ? "Non-stop" : stops === 1 ? "1 Stop" : `${stops} Stops`;
+
+  const journeyLabel = (flight as any).journeyLabel as string | undefined;
+
+  const handleSelect = () => {
+    // Pass the flight with the chosen fareId AND its actual price so the
+    // traveller page and booking flow always see the price the user selected,
+    // not the cheapest fare's price that was used as the card headline.
+    onSelect({
+      ...flight,
+      fareId: selectedFare.fareId,
+      price: selectedFare.pricePerAdult,
+    });
   };
 
-  // journeyLabel is set by the backend ("Outbound" / "Return")
-  const journeyLabel = (flight as any).journeyLabel as string | undefined;
+  // ── Baggage label helper ──────────────────────────────────────────────────
+  const baggageLabel = (b: FareTier["cabinBaggage"]) => {
+    if (!b) return "—";
+    if (b.quantity === 0) return "Not included";
+    return `${b.piece}pc · ${b.quantity}${b.unit}`;
+  };
+
+  const benefitIcon = (value: string) =>
+    value === "FREE" ? (
+      <span className="text-green-600 font-semibold">✓ Free</span>
+    ) : (
+      <span className="text-amber-500 font-semibold">$ Paid</span>
+    );
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 mb-3">
-      {/* Top: airline info + badges */}
+      {/* ── Top row: airline + badges ─────────────────────────────────────── */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            {/* Plane icon */}
             <svg
               className="w-5 h-5 text-blue-600 shrink-0"
               fill="currentColor"
@@ -59,7 +101,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
               <p className="text-sm font-semibold text-gray-900">
                 {flight.airlineName}
               </p>
-              {/* ── FIX: flightNumber now shows "QR-4771 / QR-1060" instead of "N/A" */}
               <p className="text-xs text-gray-500">{flight.flightNumber}</p>
             </div>
           </div>
@@ -68,7 +109,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
         </div>
 
         <div className="flex flex-wrap gap-2 justify-end">
-          {/* Journey label (Outbound / Return) */}
           {journeyLabel && (
             <span
               className={`text-xs px-2 py-1 rounded font-medium ${
@@ -80,20 +120,11 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
               {journeyLabel}
             </span>
           )}
-          {flight.refundable && (
-            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-              Refundable
-            </span>
-          )}
-          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-            {flight.cabinType}
-          </span>
         </div>
       </div>
 
-      {/* Middle: times, duration, stops */}
+      {/* ── Times / duration / stops ──────────────────────────────────────── */}
       <div className="flex items-center gap-4 mb-4">
-        {/* Departure */}
         <div className="text-center">
           <div className="text-lg font-bold text-gray-900">
             {formatTime(flight.departureTime)}
@@ -106,7 +137,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
           </div>
         </div>
 
-        {/* Duration / stops connector */}
         <div className="flex-1 text-center">
           <div className="text-xs text-gray-500 mb-1">{flight.duration}</div>
           <div className="relative flex items-center">
@@ -118,7 +148,6 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
           </div>
         </div>
 
-        {/* ── FIX: Arrival time now shows correctly (was always blank) ─────── */}
         <div className="text-center">
           <div className="text-lg font-bold text-gray-900">
             {formatTime(flight.arrivalTime)}
@@ -131,25 +160,122 @@ export default function FlightCard({ flight, onSelect }: FlightCardProps) {
           </div>
         </div>
 
-        {/* Seats */}
         <div className="text-center ml-4 hidden md:block">
           <div className="text-sm font-medium text-gray-700">
-            {flight.availableSeats}
+            {selectedFare.availableSeats}
           </div>
           <div className="text-xs text-gray-500">Seats Left</div>
         </div>
       </div>
 
-      {/* Bottom: price + select */}
+      {/* ── Fare tier tabs ────────────────────────────────────────────────── */}
+      {fares.length > 1 && (
+        <div className="border border-gray-200 rounded-lg overflow-hidden mb-3">
+          {/* Tab headers */}
+          <div className="flex border-b border-gray-200 bg-gray-50">
+            {fares.map((fare, idx) => (
+              <button
+                key={fare.fareId}
+                onClick={() => setSelectedFareIdx(idx)}
+                className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                  idx === selectedFareIdx
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                <div>{fare.brandName}</div>
+                <div
+                  className={`text-sm font-bold mt-0.5 ${
+                    idx === selectedFareIdx ? "text-white" : "text-blue-600"
+                  }`}
+                >
+                  ₹{parseFloat(fare.pricePerAdult).toLocaleString("en-IN")}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Selected fare details */}
+          <div className="p-3 bg-white">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              {/* Cabin baggage */}
+              <div className="flex flex-col gap-1">
+                <span className="text-gray-500 flex items-center gap-1">
+                  🎒 Cabin bag
+                </span>
+                <span className="font-medium text-gray-800">
+                  {baggageLabel(selectedFare.cabinBaggage)}
+                </span>
+              </div>
+
+              {/* Check-in baggage */}
+              <div className="flex flex-col gap-1">
+                <span className="text-gray-500 flex items-center gap-1">
+                  🧳 Check-in
+                </span>
+                <span className="font-medium text-gray-800">
+                  {selectedFare.checkInBaggageAllowed
+                    ? baggageLabel(selectedFare.checkInBaggage)
+                    : "Not included"}
+                </span>
+              </div>
+
+              {/* Seat & Meal benefits */}
+              {selectedFare.benefits.map((benefit) => (
+                <div key={benefit.benefitType} className="flex flex-col gap-1">
+                  <span className="text-gray-500">
+                    {benefit.benefitType === "SEAT" ? "💺 Seat" : "🍽 Meal"}
+                  </span>
+                  <span>{benefitIcon(benefit.value)}</span>
+                </div>
+              ))}
+
+              {/* Refundable */}
+              <div className="flex flex-col gap-1">
+                <span className="text-gray-500">↩ Refund</span>
+                <span>
+                  {selectedFare.refundable ? (
+                    <span className="text-green-600 font-semibold">
+                      ✓ Refundable
+                    </span>
+                  ) : (
+                    <span className="text-red-500 font-semibold">
+                      ✗ Non-refundable
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single-fare fallback badges (when only 1 fare) */}
+      {fares.length === 1 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {selectedFare.refundable && (
+            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+              Refundable
+            </span>
+          )}
+          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+            {selectedFare.cabinType}
+          </span>
+        </div>
+      )}
+
+      {/* ── Bottom: price + select ────────────────────────────────────────── */}
       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
         <div>
           <div className="text-2xl font-bold text-green-600">
-            ₹{parseFloat(flight.price).toLocaleString("en-IN")}
+            ₹{parseFloat(selectedFare.pricePerAdult).toLocaleString("en-IN")}
           </div>
-          <div className="text-xs text-gray-500">per adult</div>
+          <div className="text-xs text-gray-500">
+            per adult · {selectedFare.brandName}
+          </div>
         </div>
         <button
-          onClick={() => onSelect(flight)}
+          onClick={handleSelect}
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
         >
           Select
