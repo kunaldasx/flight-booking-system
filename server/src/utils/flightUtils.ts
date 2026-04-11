@@ -1,6 +1,3 @@
-// Utility to parse flight data and apply filters
-import { FareTier, FareBaggage, FareBenefit } from "./types"; // adjust path if needed
-
 export interface FlightSearchParams {
   sourceCity?: string;
   destinationCity?: string;
@@ -34,15 +31,15 @@ export interface FlightCard {
   arrivalTime: string;
   duration: string;
   stops: number;
-  /** Cheapest fare's pricePerAdult — used for list sorting & price filter */
+
   price: string;
   flightNumber: string;
   segments: any[];
   route: string;
   routeWithNames: string;
-  /** All available fare tiers (2–3 per flight) */
+
   fares: FareTier[];
-  /** Cheapest fare's cabinType — legacy field kept for compat */
+
   cabinType: string;
   availableSeats: number;
   refundable: boolean;
@@ -58,7 +55,35 @@ interface FilterParams {
   departureTimeRange?: { start: string; end: string };
 }
 
-// ── Metadata extractors ──────────────────────────────────────────────────────
+export interface FareTier {
+  fareId: string;
+  fareGroup: string;
+  brandName: string;
+  cabinType: string;
+  fareClass: string;
+  fareBasisCode: string;
+  pricePerAdult: string;
+  totalCTC: string;
+  refundable: boolean;
+  checkInBaggageAllowed: boolean;
+  availableSeats: number;
+  benefits: FareBenefit[];
+  cabinBaggage: FareBaggage | null;
+  checkInBaggage: FareBaggage | null;
+}
+
+export interface FareBaggage {
+  piece: number;
+  quantity: number;
+  unit: string;
+}
+
+export interface FareBenefit {
+  benefitType: string;
+  value: string;
+  description: string;
+  shortDescription: string;
+}
 
 export function extractAirports(metaData: any): { [key: string]: Airport } {
   return metaData?.airportDetail || {};
@@ -76,13 +101,10 @@ function getAirlineName(code: string, airlines: any): string {
   return airlines[code]?.name || code;
 }
 
-// ── Fare tier extraction ─────────────────────────────────────────────────────
-
 function extractBaggage(
   baggages: any,
   type: "BAGGAGE_CABIN" | "BAGGAGE_CHECK_IN",
 ): FareBaggage | null {
-  // baggages is keyed by segment index ("0", "1", …); we read segment 0
   const segmentBaggages: any[] = baggages?.["0"] || [];
   const entry = segmentBaggages.find((b: any) => b.type === type);
   const allowed = entry?.allowedBaggages?.[0];
@@ -127,8 +149,6 @@ function extractFareTiers(fares: any[]): FareTier[] {
   });
 }
 
-// ── Main extraction ──────────────────────────────────────────────────────────
-
 export function extractFlightCards(
   sectorsData: any,
   airports: any = {},
@@ -137,7 +157,6 @@ export function extractFlightCards(
 ): FlightCard[] {
   const flights: FlightCard[] = [];
 
-  // Build reverse map: sectorKey → journey label
   const sectorToJourney: Record<string, string> = {};
   Object.keys(journeys).forEach((jKey, idx) => {
     const sectorKey = journeys[jKey]?.sector;
@@ -158,11 +177,9 @@ export function extractFlightCards(
       const rawFares: any[] = flight.fares || [];
       if (rawFares.length === 0) continue;
 
-      // ── Extract all fare tiers ─────────────────────────────────────────────
+      // Extract all fare tiers
       const fareTiers = extractFareTiers(rawFares);
 
-      // Use the cheapest fare as the card's headline price (for sorting /
-      // price-range filter).  fares are NOT guaranteed to be sorted by price.
       const cheapestFare = fareTiers.reduce((min, f) =>
         parseFloat(f.pricePerAdult) < parseFloat(min.pricePerAdult) ? f : min,
       );
@@ -172,12 +189,12 @@ export function extractFlightCards(
       // Duration
       const duration = calculateDuration(flight.flights);
 
-      // Arrival time — last segment's arrivalAirport.time
+      // Arrival time
       const lastSegment = flight.flights[flight.flights.length - 1];
       const arrivalTime = lastSegment?.arrivalAirport?.time || "";
       const lastArrivalCode = lastSegment?.arrivalAirport?.code;
 
-      // Route strings  (e.g. "DEL → DOH → SHJ")
+      // Route DEL → DOH → SHJ
       const routeCodes = flight.flights
         .map((f: any) => f.departureAirport?.code || "")
         .join(" → ");
@@ -214,18 +231,18 @@ export function extractFlightCards(
         arrivalTime,
         duration,
         stops: flight.flights.length - 1,
-        price: cheapestFare.pricePerAdult, // cheapest fare drives the card price
+        price: cheapestFare.pricePerAdult,
         flightNumber: extractFlightNumber(flight.flights),
         segments: flight.flights,
         route: fullRoute,
         routeWithNames: fullRouteWithNames,
-        fares: fareTiers, // ← ALL tiers, not just [0]
+        fares: fareTiers,
         cabinType: cheapestFare.cabinType,
         availableSeats: cheapestFare.availableSeats,
         refundable: cheapestFare.refundable,
         departureAirportName,
         arrivalAirportName,
-        fareId: cheapestFare.fareId, // default selection = cheapest
+        fareId: cheapestFare.fareId,
         journeyLabel,
       });
     }
@@ -276,8 +293,6 @@ export function filterFlights(flights: any[], filters: FilterParams): any[] {
   });
 }
 
-// ── Sorting ───────────────────────────────────────────────────────────────────
-
 export function sortFlights(
   flights: FlightCard[],
   sortBy: "price" | "duration" | "departure" = "price",
@@ -300,7 +315,7 @@ export function sortFlights(
   return sorted;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 function calculateDuration(flights: any[]): string {
   if (flights.length === 0) return "0h 0m";

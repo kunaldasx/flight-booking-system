@@ -6,7 +6,7 @@ export interface ISelectedFlight extends Document {
   fareId: string;
   flightData: any;
   selectedFareData: any;
-  processedFlightData: any; // ← new: stores the extracted FlightCard
+  processedFlightData: any;
   createdAt: Date;
 }
 
@@ -17,7 +17,7 @@ const SelectedFlightSchema: Schema = new Schema(
     fareId: { type: String, required: true },
     flightData: { type: Schema.Types.Mixed, required: true },
     selectedFareData: { type: Schema.Types.Mixed, required: true },
-    processedFlightData: { type: Schema.Types.Mixed }, // ← new
+    processedFlightData: { type: Schema.Types.Mixed },
   },
   { timestamps: true },
 );

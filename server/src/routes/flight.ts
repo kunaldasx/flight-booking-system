@@ -9,7 +9,6 @@ import {
 
 const router = Router();
 
-// POST /api/flight/select — save selected flight + processed card
 router.post("/select", async (req: Request, res: Response) => {
   try {
     const { searchId, flightKey, fareId } = req.body;
@@ -50,7 +49,6 @@ router.post("/select", async (req: Request, res: Response) => {
         .json({ success: false, error: "Flight not found" });
     }
 
-    // Build a processed FlightCard so the admin page can display full details
     const isolatedSector = { [foundSectorKey]: { [flightKey]: flightData } };
     const cards = extractFlightCards(
       isolatedSector,
@@ -60,7 +58,6 @@ router.post("/select", async (req: Request, res: Response) => {
     );
     let processedFlight = cards[0] ?? null;
     if (processedFlight) {
-      // Pin the user's chosen fare
       processedFlight.fareId = fareId;
       const chosenFare = processedFlight.fares.find(
         (f: any) => f.fareId === fareId,
@@ -94,7 +91,7 @@ router.post("/select", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/flight/selected — list all selected flights (newest first)
+// List all selected Flights
 router.get("/selected", async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;

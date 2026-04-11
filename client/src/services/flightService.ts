@@ -39,9 +39,4 @@ export const flightService = {
     const response = await api.get("/api/booking", { params: { page, limit } });
     return response.data;
   },
-
-  async getBooking(bookingId: string) {
-    const response = await api.get(`/api/booking/${bookingId}`);
-    return response.data;
-  },
 };
